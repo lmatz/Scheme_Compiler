@@ -1,53 +1,14 @@
-(define-syntax define-primitive
-  (syntax-rules ()
-   [(_ (prim-name arg* ...) b b* ...)
-    (begin
-      (putprop ’prim-name ’*is-prim* #t)
-      (putprop ’prim-name ’*arg-count*
-        (length ’(arg* ...)))
-      (putprop ’prim-name ’*emitter*
-        (lambda (arg* ...) b b* ...)))]))
-        
-        
-(define (primitive? x)
-  (and (symbol? x) (getprop x ’*is-prim*)))
-  
-  
-(define (primitive-emitter x)
-  (or (getprop x ’*emitter*) (error ---)))
-  
-  
-(define (primcall? expr)
-  (and (pair? expr) (primitive? (car expr))))
-  
-  
-(define (emit-primcall expr)
-  (let ([prim (car expr)] [args (cdr expr)])
-    (check-primcall-args prim args)
-    (apply (primitive-emitter prim) args)))
-    
-    
-(define (emit-expr expr)
-  (cond
-   [(immediate? expr) (emit-immediate expr)]
-   [(primcall? expr)  (emit-primcall expr)]
-   [else (error ---)]))
-   
-   
-(define (emit-program expr)
-  (emit-function-header "scheme_entry")
-  (emit-expr expr)
-  (emit "    ret"))
-
-
 (define fxshift 2)
 (define fxmask #x03)
+(define fxtag  #x00)
 (define bool_f #x2F)
 (define bool_t #x6F)
+(define bool_bit 6)
 (define wordsize 4)
 (define nullval #b00111111)
 (define charshift 8)
 (define chartag #b00001111)
+
 
 (define fixnum-bits (- (* wordsize 8) fxshift))
 
@@ -69,19 +30,140 @@
     ((char? x) (+ (ash (char->integer x) charshift) chartag ))
     ((null? x) nullval) 
     (else (error "must not happen"))))
+    
+(define (emit-immediate x)
+  (emit "    movl $~s, %eax" (immediate-rep x)))
+    
 
-(define (compile-program x)
-  (unless (immediate? x) (error ---))
+;**********************primitive**********************
+    
+(define-syntax define-primitive
+  (syntax-rules ()
+   [(_ (prim-name arg* ...) b b* ...)
+    (begin
+      (putprop ’prim-name ’*is-prim* #t)
+      (putprop ’prim-name ’*arg-count*
+        (length ’(arg* ...)))
+      (putprop ’prim-name ’*emitter*
+        (lambda (arg* ...) b b* ...)))]))
+        
+(define (primitive? x)
+  (and (symbol? x) (getprop x ’*is-prim*)))
+  
+(define (primitive-emitter x)
+  (or (getprop x ’*emitter*) (error ---)))
+  
+(define (primcall? expr)
+  (and (pair? expr) (primitive? (car expr))))
+
+(define (emit-primcall expr)
+  (let ([prim (car expr)] [args (cdr expr)])
+    (check-primcall-args prim args)
+    (apply (primitive-emitter prim) args)))
+    
+(define (emit-expr expr)
+  (cond
+   [(immediate? expr) (emit-immediate expr)]
+   [(primcall? expr)  (emit-primcall expr)]
+   [else (error ---)]))
+
+(define (emit-function-header header)
   (emit "    .section        __TEXT,__text,regular,pure_instructions")
-  (emit "    .global _scheme_entry")
+  (emit (string-append "    .global _" header ))
   (emit "    .align  4, 0x90")
-  (emit "_scheme_entry:        ## @scheme_entry")
+  (emit (string-append "_" header ":        ## @scheme_entry"))
   (emit "    .cfi_startproc")
-  (emit "## BB#0:")
-  (emit "    movl $~s, %eax" (immediate-rep x))
+  (emit "## BB#0:"))
+
+(define (compile-program expr)
+  (emit-unction-header "scheme_entry")
+  (emit-expr expr)
   (emit "    ret")
   (emit "    .cfi_endproc"))
+  
+;********************unary primitive*******************  
+  
+(define-primitive (fxadd1 arg)
+  (emit-expr arg)
+  (emit "    addl $~s, %eax" (immediate-rep 1)))
+  
+(define-primitive (fxsub1 arg)
+  (emit-expr arg)
+  (emit "    subl $~s, %eax" (immediate-rep 1)))
+    
+(define-primitive (fixnum->char arg)
+  (emit-expr arg)
+  (emit "    shll $~s, %eax" (- charshift fxshift))
+  (emit "    orl $~s, %eax" chartag)) 
+  
+(define-primitive (char->fixnum arg)
+  (emit-expr arg)
+  (emit "    shrl $~s, %eax" (- charshift fxshift)))
+  
+(define-primitive ($fxzero? arg)
+  (emit-expr arg)
+  (emit "    testl %eax, %eax")
+  (emit "    sete %al")
+  (emit "    movzbl %al, %eax")
+  (emit "    sal $~s, %al" bool_bit)
+  (emit "    or $~s, %al" bool_f))
 
+(define-primitive (fixnum? arg)
+  (emit-expr arg)
+  (emit "    and $~s, %al" fxmask)
+  (emit "    cmp $~s, %al" fxtag)
+  (emit "    sete %al")
+  (emit "    movzbl %al, %eax")
+  (emit "    sal $~s, %al" bool_bit)
+  (emit "    or $~s, %al" bool_f))
+  
+(define-primitive (fxzero? arg)
+  (emit-expr arg)
+  (emit "    testl %eax, %eax")
+  (emit "    sete %al")
+  (emit "    movzbl %al, %eax")
+  (emit "    sal $~s, %al" bool_bit)
+  (emit "    or $~s, %al" bool_f))
+  
+(define-primitive (null? arg)
+  (emit-expr arg)
+  (emit "    cmp $~s, %al" nullval)
+  (emit "    sete %al")
+  (emit "    movzbl %al, %eax")
+  (emit "    sal $~s, %al" bool_bit)
+  (emit "    or $~s, %al" bool_f))
+  
+(define-primitive (boolean? arg)
+  (emit-expr arg)
+  (emit "    and $~s, %al" bool_mask)
+  (emit "    cmp $~s, %al" bool_tag)
+  (emit "    sete %al")
+  (emit "    movzbl %al, %eax")
+  (emit "    sal $~s, %al" bool_bit)
+  (emit "    or $~s, %al" bool_f))
+  
+(define-primitive (char? arg)
+  (emit-expr arg)
+  (emit "    and $~s, %al" charmask)
+  (emit "    cmp $~s, %al" chartag)
+  (emit "    sete %al")
+  (emit "    movzbl %al, %eax")
+  (emit "    sal $~s, %al" bool_bit)
+  (emit "    or $~s, %al" bool_f))
+  
+(define-primitive (not arg)
+  (emit-expr arg)
+  (emit "    cmp $~s, %al" bool_f)
+  (emit "    sete %al")
+  (emit "    movzbl %al, %eax")
+  (emit "    sal $~s, %al" bool_bit)
+  (emit "    or $~s, %al" bool_f))
+
+(define-primitive (fxlognot arg)
+  (emit-expr arg)
+  (emit "    notl %eax")
+  (emit "    and $~s, %eax" (lognot fxmask)))
+￼
 (load "./test-driver.scm")
 (load "./tests-1.1-req.scm")
 (load "./tests-1.2-req.scm")
