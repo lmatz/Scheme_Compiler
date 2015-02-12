@@ -41,14 +41,14 @@
   (syntax-rules ()
    [(_ (prim-name arg* ...) b b* ...)
     (begin
-      (putprop ’prim-name ’*is-prim* #t)
-      (putprop ’prim-name ’*arg-count*
-        (length ’(arg* ...)))
-      (putprop ’prim-name ’*emitter*
+      (putprop 'prim-name '*is-prim* #t)
+      (putprop 'prim-name '*arg-count*
+        (length '(arg* ...)))
+      (putprop 'prim-name '*emitter*
         (lambda (arg* ...) b b* ...)))]))
         
 (define (primitive? x)
-  (and (symbol? x) (getprop x ’*is-prim*)))
+  (and (symbol? x) (getprop x '*is-prim*)))
   
 (define (primitive-emitter x)
   (or (getprop x ’*emitter*) (error ---)))
@@ -141,7 +141,7 @@
   (emit "    movzbl %al, %eax")
   (emit "    sal $~s, %al" bool_bit)
   (emit "    or $~s, %al" bool_f))
-  
+
 (define-primitive (char? arg)
   (emit-expr arg)
   (emit "    and $~s, %al" charmask)
@@ -150,7 +150,7 @@
   (emit "    movzbl %al, %eax")
   (emit "    sal $~s, %al" bool_bit)
   (emit "    or $~s, %al" bool_f))
-  
+
 (define-primitive (not arg)
   (emit-expr arg)
   (emit "    cmp $~s, %al" bool_f)
@@ -163,7 +163,7 @@
   (emit-expr arg)
   (emit "    notl %eax")
   (emit "    and $~s, %eax" (lognot fxmask)))
-￼
+  
 (load "./test-driver.scm")
 (load "./tests-1.1-req.scm")
 (load "./tests-1.2-req.scm")
