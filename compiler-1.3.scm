@@ -36,6 +36,13 @@
     
 
 ;**********************primitive**********************
+
+(define (check-primcall-args prim args)
+  (let ((n (getprop prim '*arg-count*))
+        (m (length args)))
+    (if (= m n)
+        #t
+      (error "illegal argnum:" m 'for n))))
     
 (define-syntax define-primitive
   (syntax-rules ()
