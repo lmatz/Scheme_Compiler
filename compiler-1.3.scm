@@ -8,6 +8,7 @@
 (define wordsize 4)
 (define nullval #b00111111)
 (define charshift 8)
+(define charmask #xff)
 (define chartag #b00001111)
 
 
