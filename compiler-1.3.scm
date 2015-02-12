@@ -76,7 +76,7 @@
   (emit "## BB#0:"))
 
 (define (compile-program expr)
-  (emit-unction-header "scheme_entry")
+  (emit-function-header "scheme_entry")
   (emit-expr expr)
   (emit "    ret")
   (emit "    .cfi_endproc"))
