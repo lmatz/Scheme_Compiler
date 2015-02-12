@@ -51,7 +51,7 @@
   (and (symbol? x) (getprop x '*is-prim*)))
   
 (define (primitive-emitter x)
-  (or (getprop x ’*emitter*) (error ---)))
+  (or (getprop x '*emitter*) (error ---)))
   
 (define (primcall? expr)
   (and (pair? expr) (primitive? (car expr))))
