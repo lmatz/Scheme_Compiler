@@ -168,10 +168,10 @@
   (emit "    sal $~s, %al" bool_bit)
   (emit "    or $~s, %al" bool_f))
 
-(define-primitive (fxlognot arg)
+(define-primitive ($fxlognot arg)
   (emit-expr arg)
   (emit "    notl %eax")
-  (emit "    and $~s, %eax" (lognot fxmask)))
+  (emit "    and $~s, %eax" (fxlognot fxmask)))
   
 (load "./test-driver.scm")
 (load "./tests-1.1-req.scm")
