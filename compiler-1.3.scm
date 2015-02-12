@@ -3,6 +3,7 @@
 (define fxtag  #x00)
 (define bool_f #x2F)
 (define bool_t #x6F)
+(define bool_mask #xbf)
 (define bool_bit 6)
 (define wordsize 4)
 (define nullval #b00111111)
