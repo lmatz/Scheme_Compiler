@@ -83,20 +83,20 @@
   
 ;********************unary primitive*******************  
   
-(define-primitive (fxadd1 arg)
+(define-primitive ($fxadd1 arg)
   (emit-expr arg)
   (emit "    addl $~s, %eax" (immediate-rep 1)))
   
-(define-primitive (fxsub1 arg)
+(define-primitive ($fxsub1 arg)
   (emit-expr arg)
   (emit "    subl $~s, %eax" (immediate-rep 1)))
     
-(define-primitive (fixnum->char arg)
+(define-primitive ($fixnum->char arg)
   (emit-expr arg)
   (emit "    shll $~s, %eax" (- charshift fxshift))
   (emit "    orl $~s, %eax" chartag)) 
   
-(define-primitive (char->fixnum arg)
+(define-primitive ($char->fixnum arg)
   (emit-expr arg)
   (emit "    shrl $~s, %eax" (- charshift fxshift)))
   
@@ -117,7 +117,7 @@
   (emit "    sal $~s, %al" bool_bit)
   (emit "    or $~s, %al" bool_f))
   
-(define-primitive (fxzero? arg)
+(define-primitive ($fxzero? arg)
   (emit-expr arg)
   (emit "    testl %eax, %eax")
   (emit "    sete %al")
@@ -167,3 +167,4 @@
 (load "./test-driver.scm")
 (load "./tests-1.1-req.scm")
 (load "./tests-1.2-req.scm")
+(load "./tests-1.3-req.scm")
