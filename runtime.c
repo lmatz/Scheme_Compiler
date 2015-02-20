@@ -15,7 +15,6 @@ extern int scheme_entry(void);
 #define char_shift 8
 #define char_tag   0x0f
 
-
 typedef unsigned int ptr;
 
 static void print_ptr(ptr x) {
@@ -70,7 +69,11 @@ static void deallocate_protected_space(char* p, int size) {
 }
 
 int main(int argc, char** argv) {
-        print_ptr(scheme_entry());
+	int stack_size = (128 * 4096);	/* holds 128K cells */
+	char* stack_top = allocate_protected_space(stack_size);
+	char* stack_base = stack_top + stack_size;
+        print_ptr(scheme_entry(stack_base));
+	deallocate_protected_space(stack_top, stack_size);
         return 0;
 }
 
