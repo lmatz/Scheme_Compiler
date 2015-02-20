@@ -70,8 +70,31 @@
       (emit "~a:" alt-label)
       (emit-expr (if-altern expr))
       (emit "~a:" end-label))) 
-    
 
+;**********************Binary*************************
+
+(define-syntax define-primitive
+  (syntax-rules ()
+   [(_ (prim-name si arg* ...) b b* ...)
+    (begin
+      (putprop ’prim-name ’*is-prim* #t)
+      (putprop ’prim-name ’*arg-count*
+        (length ’(arg* ...)))
+      (putprop ’prim-name ’*emitter*
+        (lambda (si arg* ...) b b* ...)))]))
+        
+(define (emit-primcall si expr)
+  (let ((prim (car expr)) (args (cdr expr)))
+    (check-primcall-args prim args)
+    (apply (primitive-emitter prim) si args)))
+    
+(define (emit-expr si expr)
+  (cond
+   [(immediate? expr) (emit-immediate expr)]
+   [(if? expr)        (emit-if si expr)]
+   [(primcall? expr)  (emit-primcall si expr)]
+   [else (error ---)]))
+  
 ;**********************primitive**********************
 
 (define (check-primcall-args prim args)
@@ -110,8 +133,11 @@
   (cond
    [(immediate? expr) (emit-immediate expr)]
    [(if? expr) (emit-if expr)]
+   [(and? expr)       (emit-and si expr)]
+   [(or? expr)        (emit-or si expr)]
    [(primcall? expr)  (emit-primcall expr)]
-   [else (error ---)]))
+   [(predicate-call? expr) (emit-predicate-val si expr)]
+   (else (error "not implemented"))))
 
 (define (emit-function-header header)
   (emit "    .section        __TEXT,__text,regular,pure_instructions")
@@ -120,10 +146,16 @@
   (emit (string-append "_" header ":        ## @scheme_entry"))
   (emit "    .cfi_startproc")
   (emit "## BB#0:"))
-
+  
 (define (compile-program expr)
   (emit-function-header "scheme_entry")
-  (emit-expr expr)
+  ￼(emit  "movl %esp, %ecx")
+  (emit " movl 4(%esp), %esp")
+  (emit " call L_scheme_entry")
+  (emit " movl %ecx, %esp")
+  (emit " ret")
+  (emit-label "L_scheme_entry")
+  (emit-expr (- wordsize) expr)
   (emit "    ret")
   (emit "    .cfi_endproc"))
   
