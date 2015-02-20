@@ -5,6 +5,7 @@
 (define bool_t #x6F)
 (define bool_mask #xbf)
 (define bool_bit 6)
+(define bool_tag  #x2f)
 (define wordsize 4)
 (define nullval #b00111111)
 (define charshift 8)
