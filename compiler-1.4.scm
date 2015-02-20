@@ -90,8 +90,8 @@
       (putprop 'prim-name '*emitter*
         (lambda (arg* ...) b b* ...)))]))
         
-(define (primitive? expr)
-  (and (symbol? expr) (getprop x '*is-prim*)))
+(define (primitive? x)
+  (and (symbol? x) (getprop x '*is-prim*)))
   
 (define (primcall? expr)
   (and (pair? expr) (primitive? (car expr))))
